@@ -1,0 +1,16 @@
+# Rotate the MammothDB Distributed Execution subsystem log
+/var/log/mammothdb/dexec.log {
+	create 640 root mammothdb
+	notifempty
+	daily
+	rotate 14
+	dateext
+	dateformat .%Y-%m-%d
+	missingok
+	compress
+
+	postrotate
+		/bin/kill -HUP `cat /var/run/syslogd.pid 2> /dev/null` 2> /dev/null || true
+	endscript
+}
+

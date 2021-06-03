@@ -1,0 +1,103 @@
+#! /bin/sh
+#
+# mdb-dexec	This shell script takes care of starting and stopping
+#	       		the MammothDB Distributed Execution subsystem.
+#
+# chkconfig: 2345 90 90
+# description: MammothDB Distributed Execution subsystem.
+#
+
+PROCESS=mdb-dexec-daemon
+NAME="MammothDB Distributed Execution"
+
+LOCKFILE=/var/lock/subsys/${PROCESS}
+
+MDB_ENVIRONMENT=/etc/mammothdb/mammothdb-env.sh
+SYSCONFIG=/etc/sysconfig/mdb-dexec
+
+# Source function libarary
+. /etc/rc.d/init.d/functions
+
+# Source MDB environment
+source $MDB_ENVIRONMENT
+export $(grep -v ^# $MDB_ENVIRONMENT | awk -F '=' '{print $1}')
+
+# Source DEXEC custom overrides
+if [ -e $SYSCONFIG ] ; then
+	source $SYSCONFIG
+	export $(grep -v ^# $SYSCONFIG | awk -F '=' '{print $1}') > /dev/null
+fi
+
+# Check for lock file
+if [ -e $LOCKFILE ] ; then
+	STATUS1="According to lock file, $NAME is running."
+	RUNNING1=1
+else
+	STATUS1="According to lock file, $NAME is NOT running."
+	RUNNING1=0
+fi
+
+# Check for process
+PS=`/bin/ps auwx | /bin/grep $PROCESS | /bin/grep -v grep | /usr/bin/wc -l`;
+
+if [ $PS -ne 0 ] ; then
+	STATUS2="According to process table, $NAME is running."
+	RUNNING2=1
+else
+	STATUS2="According to process table, $NAME is NOT running."
+	RUNNING2=0
+fi
+
+case "$1" in
+	start)
+		if [ $RUNNING2 -ne 0 ] ; then 
+			echo $STATUS2
+			exit 1
+		else 
+			if [ $RUNNING1 -ne 0 ] ; then 
+				echo $STATUS1
+				rm -f $LOCKFILE
+				echo "Removing stale lock file.";
+			fi
+		fi
+
+		echo -n "Starting $NAME:" 
+		daemon $PROCESS
+		RETVAL=$?
+		echo
+		[ $RETVAL -eq 0 ] && touch $LOCKFILE
+		;;
+ 
+	stop)
+		if [ $RUNNING2 -eq 0 ] ; then
+			echo $STATUS2
+			exit 1
+		fi
+
+		echo -n "Shutting down $NAME:"
+		killproc $PROCESS
+
+		echo
+		rm -f $LOCKFILE
+		;;
+
+	restart)
+		$0 stop
+		sleep 5
+		$0 start
+		;;
+
+	status)
+		echo $STATUS1
+		echo $STATUS2
+		[ $RUNNING1 -eq 1 ] && [ $RUNNING2 -eq 1 ] && exit 3
+        ;;
+
+	*)
+		echo "Usage: $0 {start|stop|restart|status}"
+		exit 1
+		;;
+esac
+
+exit 0
+

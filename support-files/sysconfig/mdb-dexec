@@ -1,0 +1,4 @@
+# Override MDB environment values for Distributed Executor
+
+# Example: to set different logging level, uncomment next line
+#MAMMOTHDB_LOG4J_LEVEL="DEBUG"

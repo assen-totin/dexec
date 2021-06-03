@@ -1,0 +1,5 @@
+SUBDIRS = src po
+
+dist_doc_DATA = AUTHORS BUGS ChangeLog COPYING INSTALL NEWS README TODO
+
+
